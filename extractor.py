@@ -116,7 +116,9 @@ class PaymentAgent:
             difference_brl = round(payment_total_brl - expected_total_brl, 2)
             reconciled = abs(difference_brl) <= 0.10
         else:
-            item_total_brl = freight_total_brl = expected_total_brl = None
+            item_total_brl = 0.0
+            freight_total_brl = 0.0
+            expected_total_brl = None
             difference_brl = None
             reconciled = None
             
