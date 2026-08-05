@@ -5,7 +5,7 @@ from coordinator import CoordinatorAgent
 def main():
     input_dir = "input"
     output_dir = "output"
-    trace_file = "logging/trace.jsonl"
+    trace_file = "trace.jsonl"
     
     os.makedirs(output_dir, exist_ok=True)
     os.makedirs("logging", exist_ok=True)

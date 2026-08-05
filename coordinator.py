@@ -37,6 +37,19 @@ class CoordinatorAgent:
         affected_entities["payment_ids"] = payment_ctx.get("payment_ids", [])
         
         # Đóng gói dữ liệu bối cảnh để đưa vào Policy Agent
+        
+        secondary_issues = []
+        if len(order_prod_ctx.get("affected_entities", {}).get("item_ids", [])) >= 2:
+            secondary_issues.append("multi_item_order")
+        if len(order_prod_ctx.get("affected_entities", {}).get("seller_ids", [])) >= 2:
+            secondary_issues.append("multi_seller_order")
+        if len(payment_ctx.get("payment_ids", [])) >= 2:
+            secondary_issues.append("split_payment")
+        if len(customer_ctx.get("related_order_ids", [])) > 0:
+            secondary_issues.append("repeat_customer")
+        if len(order_prod_ctx.get("product_context", {}).get("category_names", [])) >= 2:
+            secondary_issues.append("multiple_categories")
+            
         full_context = {
             "order_status": order_prod_ctx.get("order_status"),
             "affected_entities": affected_entities,
@@ -44,7 +57,8 @@ class CoordinatorAgent:
             "product_context": order_prod_ctx.get("product_context", {}),
             "payment_reconciliation": payment_ctx.get("payment_reconciliation", {}),
             "delivery_analysis": delivery_ctx.get("delivery_analysis", {}),
-            "delivery_fault_analysis": delivery_ctx.get("fault_analysis_text", "")
+            "delivery_fault_analysis": delivery_ctx.get("fault_analysis_text", ""),
+            "pre_calculated_secondary_issues": secondary_issues
         }
 
         # Handoff 5: Policy Agent (LLM)

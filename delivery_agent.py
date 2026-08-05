@@ -28,26 +28,40 @@ class DeliveryAgent(BaseLLMAgent):
             dt_estim = datetime.strptime(str(estimated_delivery_at), "%Y-%m-%d %H:%M:%S")
             delivery_variance_hours = round((dt_deliv - dt_estim).total_seconds() / 3600.0, 2)
             
-        seller_handoff_analysis = []
-        late_handoff_seller_ids = []
-        
+        seller_limits = {}
         for _, item in items.iterrows():
             s_id = item["seller_id"]
             limit_at = item["shipping_limit_date"]
+            if pd.notna(limit_at):
+                dt = datetime.strptime(str(limit_at), "%Y-%m-%d %H:%M:%S")
+                if s_id not in seller_limits or dt < seller_limits[s_id]:
+                    seller_limits[s_id] = dt
+                    
+        seller_handoff_analysis = []
+        late_handoff_seller_ids = []
+        
+        # We need a stable order of sellers. So we will collect from item list sequentially, ignoring duplicates.
+        seen_sellers = set()
+        for _, item in items.iterrows():
+            s_id = item["seller_id"]
+            if s_id in seen_sellers:
+                continue
+            seen_sellers.add(s_id)
+            
+            limit_dt = seller_limits.get(s_id)
             handoff_variance_hours = 0.0
             late_handoff = False
-            if pd.notna(carrier_handoff_at) and pd.notna(limit_at):
+            
+            if pd.notna(carrier_handoff_at) and limit_dt is not None:
                 dt_handoff = datetime.strptime(str(carrier_handoff_at), "%Y-%m-%d %H:%M:%S")
-                dt_limit = datetime.strptime(str(limit_at), "%Y-%m-%d %H:%M:%S")
-                handoff_variance_hours = round((dt_handoff - dt_limit).total_seconds() / 3600.0, 2)
+                handoff_variance_hours = round((dt_handoff - limit_dt).total_seconds() / 3600.0, 2)
                 if handoff_variance_hours > 0:
                     late_handoff = True
-                    if s_id not in late_handoff_seller_ids:
-                        late_handoff_seller_ids.append(s_id)
-                        
+                    late_handoff_seller_ids.append(s_id)
+                    
             seller_handoff_analysis.append({
                 "seller_id": s_id,
-                "shipping_limit_at": str(limit_at) if pd.notna(limit_at) else None,
+                "shipping_limit_at": limit_dt.strftime("%Y-%m-%d %H:%M:%S") if limit_dt else None,
                 "handoff_variance_hours": handoff_variance_hours,
                 "late_handoff": late_handoff
             })

@@ -44,13 +44,20 @@ class CustomerAgent:
         if not cust_row.empty:
             customer_unique_id = cust_row.iloc[0]["customer_unique_id"]
             same_cust_ids = self.db.df_customers[self.db.df_customers["customer_unique_id"] == customer_unique_id]["customer_id"]
-            related_orders = self.db.df_orders[self.db.df_orders["customer_id"].isin(same_cust_ids)]
+            related_orders = self.db.df_orders[
+                (self.db.df_orders["customer_id"].isin(same_cust_ids)) &
+                (self.db.df_orders["order_id"] != order_id)
+            ]
             related_order_ids = related_orders["order_id"].tolist()
         
         return {
             "customer_unique_id": customer_unique_id,
             "related_order_ids": related_order_ids[:5]
         }
+
+def stable_unique(seq):
+    seen = set()
+    return [x for x in seq if not (x in seen or seen.add(x))]
 
 class OrderProductAgent:
     """Order & Product Agent: kiểm tra order, item, seller, product và category."""
@@ -80,11 +87,11 @@ class OrderProductAgent:
             "affected_entities": {
                 "order_ids": [order_id],
                 "item_ids": item_ids[:5],
-                "seller_ids": list(set(seller_ids))[:3]
+                "seller_ids": stable_unique(seller_ids)[:3]
             },
             "product_context": {
-                "product_ids": list(set(product_ids))[:5],
-                "category_names": list(set(category_names))[:5]
+                "product_ids": stable_unique(product_ids)[:5],
+                "category_names": stable_unique(category_names)[:5]
             }
         }
 
@@ -98,7 +105,7 @@ class PaymentAgent:
         payments = self.db.df_payments[self.db.df_payments["order_id"] == order_id]
         
         payment_ids = [f"{order_id}:{row['payment_sequential']}" for _, row in payments.iterrows()]
-        payment_types = payments["payment_type"].unique().tolist()
+        payment_types = stable_unique(payments["payment_type"].tolist())
         
         payment_total_brl = round(float(payments["payment_value"].sum()), 2)
         has_items = not items.empty
