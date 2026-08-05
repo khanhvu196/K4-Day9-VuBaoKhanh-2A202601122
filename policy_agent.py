@@ -57,6 +57,10 @@ POLICY RULES (EC_POLICY_V2):
 4. valid_split_payment -> Responsible: None, Action: explain_valid_split_payment (NO verify_payment_allocation).
 5. unsupported_late_claim -> Responsible: None, Action: reject_late_refund.
 
+CRITICAL INSTRUCTIONS AGAINST HALLUCINATIONS:
+- Look at "delivery_variance_hours" in the context. If it is a NEGATIVE number (e.g. -166.52), it means the package was delivered EARLY. You MUST NOT select late_delivery_seller or late_delivery_logistics.
+- If the customer makes a claim but no rules are violated, set primary_issue to "unsupported_late_claim" or "no_issue_found", case_status to "no_action", recommended_refund_brl to 0.0, and resolution_actions to [].
+
 Secondary Issues (append in this exact order if condition met):
 1. multi_item_order: >= 2 item rows.
 2. multi_seller_order: >= 2 different sellers.
