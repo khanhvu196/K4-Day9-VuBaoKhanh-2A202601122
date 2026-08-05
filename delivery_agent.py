@@ -62,7 +62,7 @@ class DeliveryAgent(BaseLLMAgent):
         }
         
         # LLM Logic: call OpenRouter to analyze fault
-        sys_prompt = "You are the Delivery Analyst Agent. Based on the delivery variance and seller handoff hours, provide a short text concluding if there is a late delivery, and who is at fault (seller or logistics)."
+        sys_prompt = "You are the Delivery Analyst Agent. Based on the delivery variance and seller handoff hours, provide a short text concluding if there is a late delivery, and who is at fault (seller or logistics). CRITICAL NOTE: Negative (-) variance hours means EARLY delivery (NOT late). Positive (+) variance hours means LATE delivery."
         llm_analysis = self._call_llm(sys_prompt, json.dumps(delivery_analysis), json_mode=False)
         
         return {

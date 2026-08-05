@@ -32,8 +32,6 @@ def main():
                 print(f"[LỖI] {case_id}: {final_json['error']}")
                 continue
                 
-            final_json["case_id"] = case_id
-            
             with open(output_path, "w", encoding="utf-8") as f_out:
                 json.dump(final_json, f_out, ensure_ascii=False, indent=2)
 
