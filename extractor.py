@@ -100,17 +100,17 @@ class PaymentAgent:
         payment_ids = [f"{order_id}:{row['payment_sequential']}" for _, row in payments.iterrows()]
         payment_types = payments["payment_type"].unique().tolist()
         
+        payment_total_brl = round(float(payments["payment_value"].sum()), 2)
         has_items = not items.empty
         if has_items:
             item_total_brl = round(float(items["price"].sum()), 2)
             freight_total_brl = round(float(items["freight_value"].sum()), 2)
             expected_total_brl = round(item_total_brl + freight_total_brl, 2)
-            payment_total_brl = round(float(payments["payment_value"].sum()), 2)
             difference_brl = round(payment_total_brl - expected_total_brl, 2)
             reconciled = abs(difference_brl) <= 0.10
         else:
             item_total_brl = freight_total_brl = expected_total_brl = None
-            payment_total_brl = difference_brl = None
+            difference_brl = None
             reconciled = None
             
         return {

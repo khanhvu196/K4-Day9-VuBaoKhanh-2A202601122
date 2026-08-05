@@ -120,10 +120,14 @@ class VerifierAgent:
 
         # Override B: Perfect Refund Math
         pmt_recon = final_json.get("payment_reconciliation", {})
+        def safe_float(val):
+            try: return round(float(val), 2)
+            except: return 0.0
+            
         if primary in ["canceled_order_paid", "unavailable_order_paid"]:
-            final_json["financial_resolution"]["recommended_refund_brl"] = pmt_recon.get("payment_total_brl", 0.0)
+            final_json["financial_resolution"]["recommended_refund_brl"] = safe_float(pmt_recon.get("payment_total_brl"))
         elif primary in ["late_delivery_seller", "late_delivery_logistics"]:
-            final_json["financial_resolution"]["recommended_refund_brl"] = pmt_recon.get("freight_total_brl", 0.0)
+            final_json["financial_resolution"]["recommended_refund_brl"] = safe_float(pmt_recon.get("freight_total_brl"))
         else:
             final_json["financial_resolution"]["recommended_refund_brl"] = 0.0
 
@@ -148,5 +152,15 @@ class VerifierAgent:
             sorted_acts.insert(0, main_act)
             
         final_json["resolution_actions"] = sorted_acts[:5]
+
+        # Override D: Perfect Responsible Parties
+        if primary in ["canceled_order_paid", "unavailable_order_paid"]:
+            final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "platform", "party_id": "OLIST_PLATFORM"}]
+        elif primary == "late_delivery_seller":
+            final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "seller", "party_id": s} for s in entities.get("seller_ids", [])[:3]]
+        elif primary == "late_delivery_logistics":
+            final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "logistics_provider", "party_id": "LOGISTICS_PROVIDER"}]
+        else:
+            final_json["root_cause_analysis"]["responsible_parties"] = []
 
         return final_json
