@@ -32,8 +32,23 @@ def main():
                 print(f"[LỖI] {case_id}: {final_json['error']}")
                 continue
                 
+            # Reorder keys to strictly match BTC's schema example
+            ordered_json = {
+                "case_id": case_id,
+                "case_assessment": final_json.get("case_assessment", {}),
+                "affected_entities": final_json.get("affected_entities", {}),
+                "customer_context": final_json.get("customer_context", {}),
+                "product_context": final_json.get("product_context", {}),
+                "delivery_analysis": final_json.get("delivery_analysis", {}),
+                "payment_reconciliation": final_json.get("payment_reconciliation", {}),
+                "root_cause_analysis": final_json.get("root_cause_analysis", {}),
+                "evidence_ids": final_json.get("evidence_ids", []),
+                "financial_resolution": final_json.get("financial_resolution", {}),
+                "resolution_actions": final_json.get("resolution_actions", [])
+            }
+            
             with open(output_path, "w", encoding="utf-8") as f_out:
-                json.dump(final_json, f_out, ensure_ascii=False, indent=2)
+                json.dump(ordered_json, f_out, ensure_ascii=False, indent=2)
 
             trace_entry = {
                 "case_id": case_id,
