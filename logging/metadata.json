@@ -1,0 +1,32 @@
+{
+    "candidate_name": "Vũ Bảo Khánh",
+    "project_name": "Olist E-commerce Multi-Agent Dispute Resolution System",
+    "policy_version": "EC_POLICY_V2",
+    "model_info": {
+        "primary_model": "meta-llama/llama-3.1-8b-instruct",
+        "parameter_size": "8B",
+        "provider": "OpenRouter API"
+    },
+    "architecture_info": {
+        "framework": "Strict BTC 7-Agent Architecture (Hybrid LLM/Deterministic)",
+        "total_agents": 7,
+        "agents": [
+            "Coordinator Agent: nhận case, giao việc và tổng hợp output.",
+            "Customer Agent: xác định customer identity và lịch sử order.",
+            "Order & Product Agent: kiểm tra order, item, seller, product và category.",
+            "Payment Agent: tổng hợp payment row và đối soát với item + freight.",
+            "Delivery Agent: tính delivery variance và seller handoff variance (LLM + Python).",
+            "Policy Agent: áp dụng EC_POLICY_V2, xác định taxonomy, responsibility, refund và actions (LLM).",
+            "Verifier Agent: kiểm tra ID, số tiền, null handling, array limit và schema trước khi ghi file."
+        ]
+    },
+    "runtime_environment": {
+        "language": "Python 3.10+",
+        "os": "Windows",
+        "key_libraries": [
+            "pandas",
+            "requests",
+            "python-dotenv"
+        ]
+    }
+}
