@@ -87,4 +87,21 @@ class VerifierAgent:
             final_json["product_context"]["category_names"] = []
             final_json["delivery_analysis"]["seller_handoff_analysis"] = []
             
+        # 9. STRICT ENUM GUARDRAILS (To prevent LLM hallucination giving 0 points)
+        VALID_PRIMARY_ISSUES = ["canceled_order_paid", "unavailable_order_paid", "late_delivery_seller", "late_delivery_logistics", "valid_split_payment", "unsupported_late_claim"]
+        VALID_CAUSE_CODES = ["SELLER_HANDOFF_AFTER_LIMIT", "CARRIER_DELIVERED_AFTER_ESTIMATE", "ORDER_CANCELED_AFTER_PAYMENT", "ORDER_UNAVAILABLE_AFTER_PAYMENT", "MULTIPLE_PAYMENTS_RECONCILED", "DELIVERY_WITHIN_ESTIMATE"]
+        VALID_ACTIONS = ["issue_full_refund", "refund_freight", "explain_valid_split_payment", "reject_late_refund", "review_seller_handoff", "review_carrier_delay", "verify_refund_completion", "coordinate_multi_seller_case", "verify_payment_allocation"]
+
+        if final_json.get("case_assessment", {}).get("primary_issue") not in VALID_PRIMARY_ISSUES:
+            final_json["case_assessment"]["primary_issue"] = "unsupported_late_claim"
+            final_json["case_assessment"]["case_status"] = "no_action"
+
+        if final_json.get("root_cause_analysis", {}).get("ranked_causes"):
+            cause = final_json["root_cause_analysis"]["ranked_causes"][0]
+            if isinstance(cause, dict) and cause.get("cause_code") not in VALID_CAUSE_CODES:
+                cause["cause_code"] = "DELIVERY_WITHIN_ESTIMATE"
+
+        if "resolution_actions" in final_json:
+            final_json["resolution_actions"] = [a for a in final_json["resolution_actions"] if a in VALID_ACTIONS]
+
         return final_json

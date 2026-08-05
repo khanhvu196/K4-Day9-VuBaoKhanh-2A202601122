@@ -49,18 +49,23 @@ class PolicyAgent(BaseLLMAgent):
     def process(self, customer_req: dict, context_data: dict) -> dict:
         sys_prompt = """
 You are the Policy Agent. Your task is to output a STRICT JSON object resolving the case based on context data and delivery analysis.
+You are the Policy Agent. Your task is to output a STRICT JSON object resolving the case.
 
-POLICY RULES (EC_POLICY_V2):
-1. canceled_order_paid / unavailable_order_paid -> Responsible: platform (OLIST_PLATFORM), Action: issue_full_refund.
-2. late_delivery_seller -> Responsible: violating sellers, Action: refund_freight, review_seller_handoff.
-3. late_delivery_logistics -> Responsible: logistics_provider (LOGISTICS_PROVIDER), Action: refund_freight, review_carrier_delay.
-4. valid_split_payment -> Responsible: None, Action: explain_valid_split_payment (NO verify_payment_allocation).
-5. unsupported_late_claim -> Responsible: None, Action: reject_late_refund.
+POLICY RULES (EC_POLICY_V2) - MATCH EXACTLY (DO NOT INVENT ANYTHING):
+1. If order canceled and payment > 0:
+   primary_issue: "canceled_order_paid", cause_code: "ORDER_CANCELED_AFTER_PAYMENT", responsible: "platform" (OLIST_PLATFORM), action: "issue_full_refund"
+2. If order unavailable and payment > 0:
+   primary_issue: "unavailable_order_paid", cause_code: "ORDER_UNAVAILABLE_AFTER_PAYMENT", responsible: "platform" (OLIST_PLATFORM), action: "issue_full_refund"
+3. If delivery_variance_hours > 0 (LATE) AND seller late_handoff is true:
+   primary_issue: "late_delivery_seller", cause_code: "SELLER_HANDOFF_AFTER_LIMIT", responsible: "seller" (violating seller_id), actions: "refund_freight", "review_seller_handoff"
+4. If delivery_variance_hours > 0 (LATE) AND no seller late_handoff:
+   primary_issue: "late_delivery_logistics", cause_code: "CARRIER_DELIVERED_AFTER_ESTIMATE", responsible: "logistics_provider" (LOGISTICS_PROVIDER), actions: "refund_freight", "review_carrier_delay"
+5. If split payment (>=2 payments) AND reconciled is true:
+   primary_issue: "valid_split_payment", cause_code: "MULTIPLE_PAYMENTS_RECONCILED", responsible: null, action: "explain_valid_split_payment"
+6. If delivery_variance_hours <= 0 (EARLY/ON TIME) or no other rule matches:
+   primary_issue: "unsupported_late_claim", cause_code: "DELIVERY_WITHIN_ESTIMATE", responsible: null, action: "reject_late_refund"
 
-CRITICAL INSTRUCTIONS AGAINST HALLUCINATIONS:
-- Look at "delivery_variance_hours" in the context. If it is a NEGATIVE number (e.g. -166.52), it means the package was delivered EARLY. You MUST NOT select late_delivery_seller or late_delivery_logistics.
-- If the customer makes a claim but no rules are violated, set primary_issue to "unsupported_late_claim" or "no_issue_found", case_status to "no_action", recommended_refund_brl to 0.0, and resolution_actions to [].
-
+CRITICAL: YOU MUST ONLY USE THE EXACT STRINGS ABOVE FOR primary_issue, cause_code, and resolution_actions! Do NOT use "early_delivery_seller" or "issue_partial_refund". If responsible is null, leave responsible_parties empty [].
 Secondary Issues (append in this exact order if condition met):
 1. multi_item_order: >= 2 item rows.
 2. multi_seller_order: >= 2 different sellers.
