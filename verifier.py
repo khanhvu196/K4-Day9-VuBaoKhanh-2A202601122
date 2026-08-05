@@ -142,7 +142,8 @@ class VerifierAgent:
         
         # Only add seller to evidence if they are the responsible party
         if primary == "late_delivery_seller":
-            for s in entities.get("seller_ids", [])[:3]: perfect_evs.append(f"seller:{s}")
+            late_sellers = deliv_analysis.get("late_handoff_seller_ids", [])
+            for s in late_sellers[:3]: perfect_evs.append(f"seller:{s}")
             
         perfect_evs.append(f"policy:{cause_code}")
         final_json["evidence_ids"] = perfect_evs[:20]
@@ -195,7 +196,8 @@ class VerifierAgent:
         if primary in ["canceled_order_paid", "unavailable_order_paid"]:
             final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "platform", "party_id": "OLIST_PLATFORM"}]
         elif primary == "late_delivery_seller":
-            final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "seller", "party_id": s} for s in entities.get("seller_ids", [])[:3]]
+            late_sellers = deliv_analysis.get("late_handoff_seller_ids", [])
+            final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "seller", "party_id": s} for s in late_sellers[:3]]
         elif primary == "late_delivery_logistics":
             final_json["root_cause_analysis"]["responsible_parties"] = [{"party_type": "logistics_provider", "party_id": "LOGISTICS_PROVIDER"}]
         else:
