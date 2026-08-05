@@ -53,11 +53,13 @@ class DeliveryAgent(BaseLLMAgent):
             late_handoff = False
             
             if pd.notna(carrier_handoff_at) and limit_dt is not None:
-                dt_handoff = datetime.strptime(str(carrier_handoff_at), "%Y-%m-%d %H:%M:%S")
+                dt_handoff = pd.to_datetime(carrier_handoff_at)
                 handoff_variance_hours = round((dt_handoff - limit_dt).total_seconds() / 3600.0, 2)
                 if handoff_variance_hours > 0:
                     late_handoff = True
                     late_handoff_seller_ids.append(s_id)
+            else:
+                handoff_variance_hours = None
                     
             seller_handoff_analysis.append({
                 "seller_id": s_id,

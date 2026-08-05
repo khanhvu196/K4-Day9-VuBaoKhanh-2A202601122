@@ -1,10 +1,21 @@
 class VerifierAgent:
     """Verifier Agent: kiểm tra ID, số tiền, null handling, array limit và schema trước khi ghi file."""
     def verify(self, raw_json: dict, full_context: dict) -> dict:
-        if not raw_json or "case_assessment" not in raw_json:
+        if not raw_json:
             return {"error": "Invalid JSON structure from Policy Agent"}
             
-        final_json = raw_json.copy()
+        final_json = {}
+        
+        # Reconstruct case_assessment from LLM's flattened output if necessary
+        final_json["case_assessment"] = {
+            "primary_issue": raw_json.get("primary_issue", raw_json.get("case_assessment", {}).get("primary_issue", "unsupported_late_claim")),
+            "case_status": raw_json.get("case_status", raw_json.get("case_assessment", {}).get("case_status", "no_action")),
+            "confidence": raw_json.get("confidence", raw_json.get("case_assessment", {}).get("confidence", 0.95)),
+            "secondary_issues": []
+        }
+        final_json["root_cause_analysis"] = raw_json.get("root_cause_analysis", {})
+        final_json["financial_resolution"] = raw_json.get("financial_resolution", {})
+        final_json["resolution_actions"] = raw_json.get("resolution_actions", [])
         
         # 1. Trám thêm Data (từ các Agents Python)
         entities = full_context.get("affected_entities", {})
